@@ -1,0 +1,34 @@
+# Operating-system files and Python caches
+.DS_Store
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Dependencies, Worker output and local credentials
+node_modules/
+.wrangler/
+dist/
+.env
+.env.*
+!.env.example
+.dev.vars
+.dev.vars.*
+*.log
+
+# Generated plugin exports and submission staging
+/d365-email-studio-plugin.zip
+/d365-email-studio-submission.zip
+/submission/
+/plugin-connection.json
+/plugin/.codex-plugin/
+
+# Generated Worker copy of the canonical skill and validator
+/cloudflare-mcp/src/content.js
+
+# Stress-test results and historical validator snapshot
+/stress-tests/*.json
+/stress-tests/designer-review.md
+/stress-tests/report.md
+/stress-tests/translation-diff.json
+/stress-tests/validator-before.py
