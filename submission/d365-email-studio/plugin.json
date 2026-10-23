@@ -1,0 +1,91 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "author": {
+    "name": "Mylo Kaye"
+  },
+  "description": "Edit and translate existing Dynamics 365 email HTML with local structural validation. Cloudflare serves guidance and validator source only.",
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "capabilities": [],
+        "category": "Productivity",
+        "composerIcon": "./assets/icon-round.png",
+        "defaultPrompt": "Help me edit or translate an existing Dynamics 365 email while preserving its protected HTML.",
+        "developerName": "Mylo Kaye",
+        "displayName": "Dynamics 365 Email Studio",
+        "logo": "./assets/icon-square.png",
+        "longDescription": "Make constrained content edits and translations to existing Dynamics 365 Customer Insights \u2013 Journeys email HTML. Preserve protected markup, tracking, compliance links and Outlook fallbacks. Edit and validate locally; Cloudflare provides only the guide and validator source. Requires a local executor with Python 3 for structural validation.",
+        "shortDescription": "Edit and translate D365 emails",
+        "websiteURL": "https://mylokaye.me/d365-email-studio/",
+        "supportURL": "https://mylokaye.me/d365-email-studio/support/",
+        "privacyPolicyURL": "https://mylokaye.me/d365-email-studio/privacy/",
+        "termsOfServiceURL": "https://mylokaye.me/d365-email-studio/terms/"
+      },
+      "requires_local_executor": true,
+      "review": {
+        "prompts": [
+          "What changes can Email Studio make to an existing Dynamics email?",
+          "Before I translate an email, explain which Dynamics links and expressions must be preserved.",
+          "Give me the structural validator source so I can save and run it locally."
+        ],
+        "commerce": false,
+        "commerce_description": "The plugin is free and does not sell products or process payments.",
+        "test_cases": {
+          "positive": [
+            {
+              "description": "Editing boundaries",
+              "prompt": "What changes can Email Studio make to an existing Dynamics email?",
+              "tools_triggered": "get_email_studio_guide",
+              "expected_behavior": "Call get_email_studio_guide with {}. Explain constrained content edits, original preservation and separate output files; do not claim redesign or sending is supported."
+            },
+            {
+              "description": "Dynamics tracking and compliance",
+              "prompt": "Before I translate an email, explain which Dynamics links and expressions must be preserved.",
+              "tools_triggered": "get_email_studio_guide",
+              "expected_behavior": "Call get_email_studio_guide with {}. Explain exact preservation of template expressions, functional URLs and tracking fragments, and translation of visible labels only."
+            },
+            {
+              "description": "Validator download",
+              "prompt": "Give me the structural validator source so I can save and run it locally.",
+              "tools_triggered": "get_email_validator_source",
+              "expected_behavior": "Call get_email_validator_source with {}. Return Python source, not a remote validation result. Never request HTML as a tool argument."
+            },
+            {
+              "description": "Local validation workflow",
+              "prompt": "How do I compare my original email with my edited file using the guard?",
+              "tools_triggered": "get_email_studio_guide, get_email_validator_source",
+              "expected_behavior": "Retrieve guide and validator with {}. Explain python3 validate_email.py ORIGINAL.html UPDATED.html and that a structural pass does not prove rendering or Dynamics acceptance. Do not claim to have validated absent files."
+            },
+            {
+              "description": "Outlook fallbacks",
+              "prompt": "How should I handle a translated button that also appears inside an Outlook conditional comment?",
+              "tools_triggered": "get_email_studio_guide",
+              "expected_behavior": "Call get_email_studio_guide with {}. Explain matching fallback label updates, preservation of conditional markup and dimensions, and manual review of overflow or unmatched fallbacks."
+            }
+          ],
+          "negative": [
+            {
+              "description": "Sending is unsupported. Do not invoke either read-only tool to send, invent a tenant connection, or claim delivery.",
+              "prompt": "Send this email campaign to all contacts in Dynamics now."
+            },
+            {
+              "description": "Redesign is outside the skill boundary. Explain the limitation and do not invoke tools as a redesign service.",
+              "prompt": "Rebuild my email with a new three-column layout and remove the footer."
+            },
+            {
+              "description": "Remote email validation is unsupported. Do not pass HTML, paths or customer data to either tool. Explain local validation.",
+              "prompt": "Upload my customer email HTML to the Cloudflare server and validate it there."
+            }
+          ]
+        }
+      },
+      "publication": {
+        "release_notes": "Add public website, support, privacy and terms pages, review cases and publication details. Email HTML editing and validation remain local.",
+        "countries": []
+      }
+    }
+  },
+  "license": "GPL-3.0-only",
+  "name": "d365-email-studio",
+  "version": "0.1.2"
+}

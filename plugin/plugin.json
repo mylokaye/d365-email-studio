@@ -1,26 +1,27 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
-  "name": "d365-email-studio",
-  "version": "0.1.0",
-  "description": "Edit and translate existing Dynamics 365 email HTML with local structural validation. Cloudflare serves guidance and validator source only.",
   "author": {
+    "email": "v6pdwnhvws@privaterelay.appleid.com",
     "name": "Mylo Kaye"
   },
-  "license": "GPL-3.0-only",
+  "description": "Edit and translate existing Dynamics 365 email HTML with local structural validation. Cloudflare serves guidance and validator source only.",
   "extensions": {
     "com.openai": {
       "interface": {
-        "displayName": "Dynamics 365 Email Studio",
-        "shortDescription": "Edit and translate D365 emails",
-        "longDescription": "Make constrained content edits and translations to existing Dynamics 365 Customer Insights \u2013 Journeys email HTML. Preserve protected markup, tracking, compliance links and Outlook fallbacks. Edit and validate locally; Cloudflare provides only the guide and validator source. Requires a local executor with Python 3 for structural validation.",
-        "developerName": "Mylo Kaye",
-        "category": "Productivity",
         "capabilities": [],
+        "category": "Productivity",
+        "composerIcon": "./assets/icon-round.png",
         "defaultPrompt": "Help me edit or translate an existing Dynamics 365 email while preserving its protected HTML.",
-        "logo": "./assets/logo.svg",
-        "composerIcon": "./assets/logo.svg"
+        "developerName": "Mylo Kaye",
+        "displayName": "Dynamics 365 Email Studio",
+        "logo": "./assets/icon-square.png",
+        "longDescription": "Make constrained content edits and translations to existing Dynamics 365 Customer Insights – Journeys email HTML. Preserve protected markup, tracking, compliance links and Outlook fallbacks. Edit and validate locally; Cloudflare provides only the guide and validator source. Requires a local executor with Python 3 for structural validation.",
+        "shortDescription": "Edit and translate D365 emails"
       },
       "requires_local_executor": true
     }
-  }
+  },
+  "license": "GPL-3.0-only",
+  "name": "d365-email-studio",
+  "version": "0.1.1"
 }
