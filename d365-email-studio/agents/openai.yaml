@@ -1,0 +1,3 @@
+interface:
+  display_name: "Dynamics 365 Email Studio"
+  short_description: "Edit and translate D365 email HTML safely"

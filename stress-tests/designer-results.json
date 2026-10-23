@@ -1,0 +1,87 @@
+[
+  {
+    "test": "unchanged",
+    "passed": true,
+    "accepted": true
+  },
+  {
+    "test": "language",
+    "passed": true,
+    "accepted": true
+  },
+  {
+    "test": "label",
+    "passed": true,
+    "accepted": true
+  },
+  {
+    "test": "destination retaining tracking",
+    "passed": true,
+    "accepted": true
+  },
+  {
+    "test": "removed tracking",
+    "passed": true,
+    "accepted": false
+  },
+  {
+    "test": "altered tracking ID",
+    "passed": true,
+    "accepted": false
+  },
+  {
+    "test": "tracking disabled",
+    "passed": true,
+    "accepted": false
+  },
+  {
+    "test": "designer setting",
+    "passed": true,
+    "accepted": false
+  },
+  {
+    "test": "CSS marker",
+    "passed": true,
+    "accepted": false
+  },
+  {
+    "test": "editor block type",
+    "passed": true,
+    "accepted": false
+  },
+  {
+    "test": "container ID",
+    "passed": true,
+    "accepted": false
+  },
+  {
+    "test": "asset metadata",
+    "passed": true,
+    "accepted": false
+  },
+  {
+    "test": "image source only",
+    "passed": true,
+    "accepted": true
+  },
+  {
+    "test": "missing alt added",
+    "passed": true,
+    "accepted": false
+  },
+  {
+    "test": "lookup metadata",
+    "passed": true,
+    "accepted": false
+  },
+  {
+    "test": "functional URL",
+    "passed": true,
+    "accepted": false
+  },
+  {
+    "test": "subject/title",
+    "passed": true,
+    "accepted": false
+  }
+]
