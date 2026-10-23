@@ -17,6 +17,13 @@ To deploy later, authenticate Wrangler with `npx wrangler login` and run
 `npm run deploy`. Initial deployment used the authenticated Cloudflare MCP API
 because the local Wrangler CLI had no login. No credentials are bundled.
 
+For Cloudflare Workers Builds connected to GitHub, use `main` with root directory
+`cloudflare-mcp`, build command `npm run build`, and production deploy command
+`npm run deploy`. Preview builds use the same root and build command. The build
+regenerates `src/content.js` from the skill before bundling; the generated file
+does not need to be committed. Running from the repository root fails because
+the Worker configuration and dependencies live in this subdirectory.
+
 Verification: local and live MCP initialization and tool listing passed; both live
 tool responses matched their source files; unexpected tool arguments were rejected.
 The packaged validator passed targeted allowed-translation and protected CSS,
