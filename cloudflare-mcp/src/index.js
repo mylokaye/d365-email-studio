@@ -5,7 +5,7 @@ import { registerAppResource, registerAppTool, RESOURCE_MIME_TYPE } from '@model
 import { skill, validator } from './content.js';
 import { viewerHtml } from './viewer-content.js';
 
-const INLINE_URI = 'ui://d365-email-studio/inline-preview-v2.html';
+const INLINE_URI = 'ui://d365-email-studio/inline-preview-v3.html';
 
 function createServer() {
   const server = new McpServer({ name: 'd365-email-studio', version: '0.1.0' });
@@ -39,7 +39,7 @@ function createServer() {
   }));
   registerAppTool(server, 'show_completed_email', {
     title: 'Show completed email',
-    description: 'After editing and validating an email locally, pass the completed HTML file to show its preview, Copy HTML and Download HTML buttons inline in chat. The server does not fetch or store the file.',
+    description: 'Required final step after every successful email edit or translation: call this tool with the completed HTML file to request its inline preview, Copy HTML and Download HTML buttons. Do not claim the file was sent to the preview unless this tool was called. The server does not fetch or store the file.',
     inputSchema: {
       file: z.object({
         download_url: z.string(),

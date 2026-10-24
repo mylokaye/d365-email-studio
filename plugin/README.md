@@ -18,11 +18,11 @@ and validator source. Plugin account visibility is separate from endpoint visibi
 The skill's original constraints and validator are preserved. The packaged skill adds
 guidance for using the MCP tools and showing a completed HTML file inline in chat.
 The inline card shows a scrollable half-height preview with Copy HTML and Download HTML
-buttons. ChatGPT passes a temporary file reference to the MCP tool; the Worker neither
-fetches nor stores the email. The card reads the file through ChatGPT's file API.
-After local validation, the agent passes the completed file's absolute path to the
-`show_completed_email` file parameter. The host converts it to a temporary file
-reference before the MCP request.
+buttons. After every successful edit or translation, the agent must call
+`show_completed_email` with the completed file's absolute path. ChatGPT passes a
+temporary file reference to the MCP tool; the Worker neither fetches nor stores the
+email. The card reads the file through ChatGPT's file API. The agent must not claim
+that it sent the file to the preview unless it actually called the tool.
 The editing workflow does not open the generated email in Chrome or another browser.
 Remote images and scripts are blocked in
 the preview, so final rendering still needs a Dynamics preview and test send.

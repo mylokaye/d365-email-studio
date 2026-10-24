@@ -1,5 +1,3 @@
-import { App } from '@modelcontextprotocol/ext-apps';
-
 const frame = document.querySelector('#preview');
 const copyButton = document.querySelector('#copy');
 const downloadButton = document.querySelector('#download');
@@ -40,9 +38,37 @@ function handleInput(input) {
   if (input?.file) void showFile(input.file);
 }
 
-const app = new App({ name: 'D365 Email Studio preview', version: '0.1.0' });
-app.addEventListener('toolinput', ({ arguments: args }) => handleInput(args));
-app.connect().catch(() => message('Preview unavailable in this host. Use the file link in the conversation.'));
+// Keep the MCP Apps bridge small: the full SDK client adds hundreds of KB to
+// this otherwise self-contained resource. This view only needs initialize and
+// the standard tool-input notification.
+window.addEventListener('message', (event) => {
+  if (event.source !== window.parent) return;
+  const packet = event.data;
+  if (packet?.jsonrpc !== '2.0') return;
+
+  if (packet.method === 'ui/initialize' && packet.id !== undefined) {
+    window.parent.postMessage({
+      jsonrpc: '2.0',
+      id: packet.id,
+      result: {
+        protocolVersion: packet.params?.protocolVersion || '2025-11-21',
+        hostInfo: { name: 'MCP Apps host', version: '1.0.0' },
+        hostCapabilities: {},
+        hostContext: {},
+      },
+    }, '*');
+    window.parent.postMessage({
+      jsonrpc: '2.0',
+      method: 'ui/notifications/initialized',
+      params: {},
+    }, '*');
+    return;
+  }
+
+  if (packet.method === 'ui/notifications/tool-input') {
+    handleInput(packet.params?.arguments);
+  }
+});
 
 window.addEventListener('openai:set_globals', (event) => {
   handleInput(event.detail?.globals?.toolInput);
