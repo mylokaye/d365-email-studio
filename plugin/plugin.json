@@ -4,7 +4,7 @@
     "email": "v6pdwnhvws@privaterelay.appleid.com",
     "name": "Mylo Kaye"
   },
-  "description": "Edit and translate existing Dynamics 365 email HTML with local structural validation. Cloudflare serves guidance and validator source only.",
+  "description": "Edit and translate existing Dynamics 365 email HTML with local structural validation and an optional inline preview.",
   "extensions": {
     "com.openai": {
       "interface": {
@@ -15,7 +15,7 @@
         "developerName": "Mylo Kaye",
         "displayName": "Dynamics 365 Email Studio",
         "logo": "./assets/icon-square.png",
-        "longDescription": "Make constrained content edits and translations to existing Dynamics 365 Customer Insights – Journeys email HTML. Preserve protected markup, tracking, compliance links and Outlook fallbacks. Edit and validate locally; Cloudflare provides only the guide and validator source. Requires a local executor with Python 3 for structural validation.",
+        "longDescription": "Make constrained content edits and translations to existing Dynamics 365 Customer Insights – Journeys email HTML. Preserve protected markup, tracking, compliance links and Outlook fallbacks. Edit and validate locally, then preview the completed file inline in supported ChatGPT hosts. Requires a local executor with Python 3 for structural validation.",
         "shortDescription": "Edit and translate D365 emails"
       },
       "requires_local_executor": true
@@ -23,5 +23,5 @@
   },
   "license": "GPL-3.0-only",
   "name": "d365-email-studio",
-  "version": "0.1.1"
+  "version": "0.1.2"
 }
