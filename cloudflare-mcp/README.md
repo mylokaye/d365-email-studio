@@ -2,16 +2,21 @@
 
 Live endpoint: https://d365-email-studio.drbn8f85yx.workers.dev/mcp
 
-The public, unauthenticated endpoint exposes two read-only tools with no arguments:
+The public, unauthenticated endpoint exposes two guide tools with no arguments:
 `get_email_studio_guide` and `get_email_validator_source`. These return the repository
-skill and Python validator. It has no email processing, storage bindings, outbound
-application requests, or application logging. Never submit email HTML or customer
-data to it. Normal Cloudflare network handling still applies to requests.
+skill and Python validator. It also serves an inline HTML preview and a file viewer.
+For an inline preview, ChatGPT passes a temporary file URL and ID to
+`show_completed_email`; the Worker discards those inputs without fetching or logging
+them. The UI retrieves the file through ChatGPT's file API. The file viewer reads
+through the host's resource API. The Worker has no email processing, storage bindings, outbound
+application requests, or application logging. Never submit raw email HTML or customer
+data to it. Normal Cloudflare network handling still applies to file references in requests.
 
 Email editing and structural validation run locally using the plugin bundle.
 The private plugin package lives in `../plugin/` and requires local execution.
 
 Run `npm ci`, then `node sync-content.mjs` after skill/validator changes.
+The build also bundles the file viewer into `src/viewer-content.js`.
 Use `npm run dev` for local development and `npm run build` for a dry run.
 To deploy later, authenticate Wrangler with `npx wrangler login` and run
 `npm run deploy`. Initial deployment used the authenticated Cloudflare MCP API

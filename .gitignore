@@ -25,6 +25,7 @@ dist/
 
 # Generated Worker copy of the canonical skill and validator
 /cloudflare-mcp/src/content.js
+/cloudflare-mcp/src/viewer-content.js
 
 # Stress-test results and historical validator snapshot
 /stress-tests/*.json

@@ -13,5 +13,11 @@ The server is public and unauthenticated because it serves only the reusable gui
 and validator source. Plugin account visibility is separate from endpoint visibility.
 
 The skill's original constraints and validator are preserved. The packaged skill adds
-only guidance for using the read-only MCP tools. The source lives in the adjacent
+guidance for using the MCP tools and showing a completed HTML file inline in chat.
+The inline card shows a scrollable half-height preview with Copy HTML and Download HTML
+buttons. ChatGPT passes a temporary file reference to the MCP tool; the Worker neither
+fetches nor stores the email. The card reads the file through ChatGPT's file API.
+Remote images and scripts are blocked in
+the preview, so final rendering still needs a Dynamics preview and test send.
+The source lives in the adjacent
 `d365-email-studio/` directory; refresh the package when that skill changes.
