@@ -3,7 +3,14 @@
   "mcpServers": {
     "email-studio": {
       "type": "streamable-http",
-      "url": "https://d365-email-studio.drbn8f85yx.workers.dev/mcp"
+      "url": "https://d365-email-studio.drbn8f85yx.workers.dev/mcp",
+      "extensions": {
+        "com.openai": {
+          "auth": {
+            "type": "none"
+          }
+        }
+      }
     }
   }
 }

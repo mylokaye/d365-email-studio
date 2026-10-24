@@ -21,7 +21,6 @@ dist/
 /d365-email-studio-submission.zip
 /submission/
 /plugin-connection.json
-/plugin/.codex-plugin/
 
 # Generated Worker copy of the canonical skill and validator
 /cloudflare-mcp/src/content.js
