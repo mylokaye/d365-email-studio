@@ -4,6 +4,9 @@ Private plugin containing the existing email editing skill and local Python vali
 connected to the read-only Cloudflare MCP at:
 https://d365-email-studio.drbn8f85yx.workers.dev/mcp
 
+This private package also maps the registered D365 Email Studio ChatGPT connection
+through `.app.json`, so its MCP tools are available alongside the skill.
+
 Select this plugin in Codex, attach an existing email HTML file, and request specific
 content edits or a translation. The local executor needs Python 3. Email HTML stays
 local; Cloudflare only serves the instructions and validator source. No Dynamics
@@ -20,6 +23,7 @@ fetches nor stores the email. The card reads the file through ChatGPT's file API
 After local validation, the agent passes the completed file's absolute path to the
 `show_completed_email` file parameter. The host converts it to a temporary file
 reference before the MCP request.
+The editing workflow does not open the generated email in Chrome or another browser.
 Remote images and scripts are blocked in
 the preview, so final rendering still needs a Dynamics preview and test send.
 The source lives in the adjacent

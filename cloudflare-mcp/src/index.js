@@ -5,8 +5,7 @@ import { registerAppResource, registerAppTool, RESOURCE_MIME_TYPE } from '@model
 import { skill, validator } from './content.js';
 import { viewerHtml } from './viewer-content.js';
 
-const VIEWER_URI = 'ui://d365-email-studio/email-preview';
-const INLINE_URI = 'ui://d365-email-studio/inline-preview';
+const INLINE_URI = 'ui://d365-email-studio/inline-preview-v2.html';
 
 function createServer() {
   const server = new McpServer({ name: 'd365-email-studio', version: '0.1.0' });
@@ -20,25 +19,24 @@ function createServer() {
     inputSchema: z.object({}).strict(),
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
   }, async () => ({ content: [{ type: 'text', text: validator }] }));
-  registerAppResource(server, 'email-preview', VIEWER_URI, {}, async () => ({
-    contents: [{ uri: VIEWER_URI, mimeType: RESOURCE_MIME_TYPE, text: viewerHtml }],
-  }));
   registerAppResource(server, 'inline-preview', INLINE_URI, {}, async () => ({
     contents: [{
       uri: INLINE_URI,
       mimeType: RESOURCE_MIME_TYPE,
       text: viewerHtml,
-      _meta: { 'openai/ui': { availableDisplayModes: ['inline'], preferredDisplayMode: 'inline' } },
+      _meta: {
+        ui: {
+          prefersBorder: true,
+          csp: {
+            connectDomains: ['https://chatgpt.com', 'https://files.oaiusercontent.com'],
+            resourceDomains: [],
+            frameDomains: ['https://web-sandbox.oaiusercontent.com'],
+          },
+        },
+        'openai/ui': { availableDisplayModes: ['inline'], preferredDisplayMode: 'inline' },
+      },
     }],
   }));
-  registerAppTool(server, 'open_email_preview', {
-    description: 'Open an HTML email file in the read-only preview. The host supplies a file resource reference; this tool accepts no email content.',
-    _meta: {
-      ui: { resourceUri: VIEWER_URI, visibility: ['app'] },
-      'openai/ui': { entrypoints: [{ type: 'file', extensions: ['.html', '.htm'] }] },
-    },
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
-  }, async () => ({ content: [] }));
   registerAppTool(server, 'show_completed_email', {
     title: 'Show completed email',
     description: 'After editing and validating an email locally, pass the completed HTML file to show its preview, Copy HTML and Download HTML buttons inline in chat. The server does not fetch or store the file.',
@@ -52,12 +50,13 @@ function createServer() {
     },
     _meta: {
       ui: { resourceUri: INLINE_URI },
+      'openai/outputTemplate': INLINE_URI,
       'openai/fileParams': ['file'],
       'openai/toolInvocation/invoking': 'Preparing email preview',
       'openai/toolInvocation/invoked': 'Email preview ready',
     },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
-  }, async () => ({ content: [{ type: 'text', text: 'The completed email preview is available in the inline card.' }] }));
+  }, async () => ({ content: [{ type: 'text', text: 'Inline preview requested. The host may still fail to display it; keep the completed HTML file link available.' }] }));
   return server;
 }
 
