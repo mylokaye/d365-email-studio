@@ -41,17 +41,28 @@ function handleInput(input) {
 // Keep the MCP Apps bridge small: the full SDK client adds hundreds of KB to
 // this otherwise self-contained resource. This view only needs initialize and
 // the standard tool-input notification.
+const INIT_REQUEST_ID = 1;
+
 window.addEventListener('message', (event) => {
   if (event.source !== window.parent) return;
   const packet = event.data;
   if (packet?.jsonrpc !== '2.0') return;
+
+  if (packet.id === INIT_REQUEST_ID && packet.result) {
+    window.parent.postMessage({
+      jsonrpc: '2.0',
+      method: 'ui/notifications/initialized',
+      params: {},
+    }, '*');
+    return;
+  }
 
   if (packet.method === 'ui/initialize' && packet.id !== undefined) {
     window.parent.postMessage({
       jsonrpc: '2.0',
       id: packet.id,
       result: {
-        protocolVersion: packet.params?.protocolVersion || '2025-11-21',
+        protocolVersion: packet.params?.protocolVersion || '2026-01-26',
         hostInfo: { name: 'MCP Apps host', version: '1.0.0' },
         hostCapabilities: {},
         hostContext: {},
@@ -68,7 +79,21 @@ window.addEventListener('message', (event) => {
   if (packet.method === 'ui/notifications/tool-input') {
     handleInput(packet.params?.arguments);
   }
+  if (packet.method === 'ui/notifications/tool-result') {
+    handleInput(packet.params?.structuredContent || packet.params?.arguments);
+  }
 });
+
+window.parent?.postMessage({
+  jsonrpc: '2.0',
+  id: INIT_REQUEST_ID,
+  method: 'ui/initialize',
+  params: {
+    protocolVersion: '2026-01-26',
+    appInfo: { name: 'd365-email-studio', version: '0.1.0' },
+    appCapabilities: { availableDisplayModes: ['inline'] },
+  },
+}, '*');
 
 window.addEventListener('openai:set_globals', (event) => {
   handleInput(event.detail?.globals?.toolInput);

@@ -6,6 +6,21 @@ import { skill, validator } from './content.js';
 import { viewerHtml } from './viewer-content.js';
 
 const INLINE_URI = 'ui://d365-email-studio/inline-preview-v3.html';
+const UI_META = {
+  ui: {
+    domain: 'https://d365-email-studio.drbn8f85yx.workers.dev',
+    prefersBorder: true,
+    permissions: {
+      clipboardWrite: {},
+    },
+    csp: {
+      connectDomains: ['https://chatgpt.com', 'https://files.oaiusercontent.com'],
+      resourceDomains: [],
+      frameDomains: [],
+    },
+  },
+  'openai/ui': { availableDisplayModes: ['inline'] },
+};
 
 function createServer() {
   const server = new McpServer({ name: 'd365-email-studio', version: '0.1.0' });
@@ -19,35 +34,35 @@ function createServer() {
     inputSchema: z.object({}).strict(),
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
   }, async () => ({ content: [{ type: 'text', text: validator }] }));
-  registerAppResource(server, 'inline-preview', INLINE_URI, {}, async () => ({
-    contents: [{
-      uri: INLINE_URI,
+  registerAppResource(
+    server,
+    'inline-preview',
+    INLINE_URI,
+    {
+      description: 'Inline read-only preview for completed Dynamics 365 emails.',
       mimeType: RESOURCE_MIME_TYPE,
-      text: viewerHtml,
-      _meta: {
-        ui: {
-          prefersBorder: true,
-          csp: {
-            connectDomains: ['https://chatgpt.com', 'https://files.oaiusercontent.com'],
-            resourceDomains: [],
-            frameDomains: ['https://web-sandbox.oaiusercontent.com'],
-          },
-        },
-        'openai/ui': { availableDisplayModes: ['inline'], preferredDisplayMode: 'inline' },
-      },
-    }],
-  }));
+      _meta: UI_META,
+    },
+    async () => ({
+      contents: [{
+        uri: INLINE_URI,
+        mimeType: RESOURCE_MIME_TYPE,
+        text: viewerHtml,
+        _meta: UI_META,
+      }],
+    }),
+  );
   registerAppTool(server, 'show_completed_email', {
     title: 'Show completed email',
     description: 'Required final step after every successful email edit or translation: call this tool with the completed HTML file to request its inline preview, Copy HTML and Download HTML buttons. Do not claim the file was sent to the preview unless this tool was called. The server does not fetch or store the file.',
-    inputSchema: {
+    inputSchema: z.object({
       file: z.object({
         download_url: z.string(),
         file_id: z.string(),
         mime_type: z.string().optional(),
         file_name: z.string().optional(),
       }).strict(),
-    },
+    }).strict(),
     _meta: {
       ui: { resourceUri: INLINE_URI },
       'openai/outputTemplate': INLINE_URI,
@@ -60,7 +75,7 @@ function createServer() {
   return server;
 }
 
-const handler = createMcpHandler(createServer);
+const handler = createMcpHandler(createServer, { allowedOriginHostnames: '*' });
 export default {
   async fetch(request, env, ctx) {
     const path = new URL(request.url).pathname;

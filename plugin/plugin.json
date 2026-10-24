@@ -17,7 +17,11 @@
         "displayName": "Dynamics 365 Email Studio",
         "logo": "./assets/icon-square.png",
         "longDescription": "Make constrained content edits and translations to existing Dynamics 365 Customer Insights \u2013 Journeys email HTML. Preserve protected markup, tracking, compliance links and Outlook fallbacks. Edit and validate locally, then preview the completed file inline in supported ChatGPT hosts. Requires a local executor with Python 3 for structural validation.",
-        "shortDescription": "Edit and translate D365 emails"
+        "shortDescription": "Edit and translate D365 emails",
+        "websiteURL": "https://mylokaye.me/d365-email-studio/",
+        "supportURL": "https://mylokaye.me/d365-email-studio/support/",
+        "privacyPolicyURL": "https://mylokaye.me/d365-email-studio/privacy/",
+        "termsOfServiceURL": "https://mylokaye.me/d365-email-studio/terms/"
       },
       "requires_local_executor": true
     }
