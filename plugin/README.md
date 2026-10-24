@@ -17,6 +17,9 @@ guidance for using the MCP tools and showing a completed HTML file inline in cha
 The inline card shows a scrollable half-height preview with Copy HTML and Download HTML
 buttons. ChatGPT passes a temporary file reference to the MCP tool; the Worker neither
 fetches nor stores the email. The card reads the file through ChatGPT's file API.
+After local validation, the agent passes the completed file's absolute path to the
+`show_completed_email` file parameter. The host converts it to a temporary file
+reference before the MCP request.
 Remote images and scripts are blocked in
 the preview, so final rendering still needs a Dynamics preview and test send.
 The source lives in the adjacent
