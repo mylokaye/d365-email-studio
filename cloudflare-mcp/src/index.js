@@ -5,8 +5,10 @@ import { registerAppResource, registerAppTool, RESOURCE_MIME_TYPE } from '@model
 import { skill, validator } from './content.js';
 import { viewerHtml } from './viewer-content.js';
 
-const INLINE_URI = 'ui://d365-email-studio/inline-preview-v7.html';
+const INLINE_URI = 'ui://d365-email-studio/inline-preview-v9.html';
 const LEGACY_INLINE_URIS = [
+  'ui://d365-email-studio/inline-preview-v8.html',
+  'ui://d365-email-studio/inline-preview-v7.html',
   'ui://d365-email-studio/inline-preview-v6.html',
   'ui://d365-email-studio/inline-preview-v5.html',
   'ui://d365-email-studio/inline-preview-v4.html',
@@ -27,7 +29,9 @@ const UI_META = {
         'https://files.oaiusercontent.com',
         'https://*.oaiusercontent.com',
       ],
-      resourceDomains: [],
+      // The desktop host URL-normalizes these entries; wildcard hosts become
+      // percent-encoded and invalid CSP sources. Use explicit image origins.
+      resourceDomains: ['https://emailui-usa1.mkt.dynamics.com'],
       frameDomains: [],
     },
   },

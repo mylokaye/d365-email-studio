@@ -30,7 +30,7 @@ reads the completed output through ChatGPT's file API. If the host cannot
 reference the output, the agent provides the validated download link without
 an inline preview. The original input must never stand in for the output.
 The editing workflow does not open the generated email in Chrome or another browser.
-Remote images and scripts are blocked in
+HTTPS images are enabled, while scripts are blocked in
 the preview, so final rendering still needs a Dynamics preview and test send.
 The source lives in the adjacent
 `d365-email-studio/` directory; refresh the package when that skill changes.

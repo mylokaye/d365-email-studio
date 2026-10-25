@@ -35,4 +35,10 @@ assert.ok(resource.result.contents[0].text.includes('ui/download-file'));
 assert.ok(!resource.result.contents[0].text.includes('<iframe'));
 assert.equal(resource.result.contents[0]._meta.ui.domain, 'https://d365-email-studio.drbn8f85yx.workers.dev');
 assert.ok(!resource.result.contents[0].text.includes('replaceAll'));
+const imageOrigins = resource.result.contents[0]._meta.ui.csp.resourceDomains;
+assert.ok(imageOrigins.includes('https://emailui-usa1.mkt.dynamics.com'));
+for (const origin of imageOrigins) {
+  assert.equal(new URL(origin).origin, origin);
+  assert.ok(!origin.includes('*') && !origin.includes('%'));
+}
 console.log('PASS: initialize, strict tool schema, file-reference handoff, legacy rejection, preview resource');

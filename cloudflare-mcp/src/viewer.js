@@ -59,7 +59,7 @@ function showBytes(value, name) {
   sourceText.value = text;
   copyButton.disabled = false;
   updateDownload();
-  message('Email loaded. Remote images, active content and link navigation are disabled in this display copy.');
+  message('Email loaded. HTTPS images are enabled. Active content and link navigation are disabled in this display copy.');
 }
 async function showFile(input, force = false) {
   if (input.unsupportedEdits) { reset(); message('Replacement payloads are not supported. Use the completed output file.'); return; }

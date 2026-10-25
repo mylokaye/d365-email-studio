@@ -47,3 +47,11 @@ capability is unavailable, it opens a fresh original-file link using the host
 link API (`ui/open-link` or the OpenAI `openExternal` extension).
 File fetching is client-only, limited to 5 MiB with a 15-second loading deadline.
 The local HTML picker reads directly in the app and never calls the Worker.
+
+The preview permits HTTPS image sources and CSS background images from the
+explicit origins in `UI_META.ui.csp.resourceDomains` (currently the Dynamics
+template image host). Additional image hosts must be added there; this desktop
+host percent-encodes wildcard hosts into invalid CSP sources. Image requests
+go directly from the host browser to the image server and may trigger tracking
+pixels. Scripts, frames, forms, link navigation, and other remote CSS resources
+remain disabled. Downloaded HTML bytes are unchanged.
