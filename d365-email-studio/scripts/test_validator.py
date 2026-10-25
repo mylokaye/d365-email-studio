@@ -3,7 +3,8 @@ import sys
 from pathlib import Path
 from validate_email import validate
 
-original = Path(sys.argv[1]).read_bytes().decode('utf-8')
+fixture = Path(sys.argv[1]) if len(sys.argv) > 1 else Path(__file__).resolve().parents[2] / 'stress-tests/exported-original.html'
+original = fixture.read_bytes().decode('utf-8')
 cases = [
     ('unchanged', original, True),
     ('translation and Outlook label', original.replace('Lorem ipsum dolor sit amet consectetur adipiscing elit.', 'Bonjour à tous.').replace('>Button<', '>Continuer<').replace('>Unsubscribe<', '>Se désabonner<').replace('lang="en-US"', 'lang="fr-FR"'), True),
@@ -20,6 +21,8 @@ cases = [
     ('padding', original.replace('&nbsp;', '', 1), False),
 ]
 for name, updated, expected in cases:
+    if name != 'unchanged':
+        assert updated != original, f'{name}: fixture target missing'
     try:
         validate(original, updated)
         accepted = True

@@ -1,199 +1,183 @@
-const frame = document.querySelector('#preview');
+import { App } from '@modelcontextprotocol/ext-apps';
+import { extractFile, fileUrl, readBytes, base64, LOAD_TIMEOUT_MS, MAX_FILE_BYTES } from './preview-data.js';
+import { renderEmail } from './preview-render.js';
+
+const app = new App({ name: 'd365-email-studio', version: '0.1.11' }, { availableDisplayModes: ['inline', 'fullscreen'] });
+const preview = document.querySelector('#preview').attachShadow({ mode: 'open' });
 const copyButton = document.querySelector('#copy');
 const downloadButton = document.querySelector('#download');
+const retryButton = document.querySelector('#retry');
 const status = document.querySelector('#status');
+const sourceText = document.querySelector('#source');
+let bytes;
 let html = '';
 let filename = 'completed-email.html';
+let current;
 let loadedKey = '';
-
-function message(value) { status.textContent = value; }
-
-let lastWidth = 0;
-let lastHeight = 0;
-function notifySize() {
-  const doc = document.documentElement;
-  const height = Math.ceil(Math.max(doc.scrollHeight, doc.getBoundingClientRect().height, document.body?.scrollHeight || 0));
-  const width = Math.ceil(window.innerWidth || doc.getBoundingClientRect().width || 0);
-  if (height > 0 && (height !== lastHeight || width !== lastWidth)) {
-    lastWidth = width;
-    lastHeight = height;
-    window.parent?.postMessage({
-      jsonrpc: '2.0',
-      method: 'ui/notifications/size-changed',
-      params: { width, height },
-    }, '*');
-    window.openai?.notifyIntrinsicHeight?.(height);
-  }
+let loadingKey = '';
+let loadVersion = 0;
+let activeController;
+let connected = false;
+let remoteDownload;
+function message(text) { status.textContent = text; }
+function reset() {
+  bytes = undefined;
+  remoteDownload = undefined;
+  html = '';
+  sourceText.value = '';
+  preview.replaceChildren();
+  copyButton.disabled = true;
+  downloadButton.disabled = true;
 }
-
-if (typeof ResizeObserver !== 'undefined') {
-  const observer = new ResizeObserver(() => requestAnimationFrame(notifySize));
-  observer.observe(document.documentElement);
-  if (document.body) observer.observe(document.body);
+function withDeadline(promise, signal) {
+  return new Promise((resolve, reject) => {
+    const aborted = () => reject(new Error('File loading timed out or was interrupted. Please retry.'));
+    if (signal.aborted) return aborted();
+    signal.addEventListener('abort', aborted, { once: true });
+    Promise.resolve(promise).then(resolve, reject).finally(() => signal.removeEventListener('abort', aborted));
+  });
 }
-
-function normalizeInput(raw) {
-  if (!raw || typeof raw !== 'object') return null;
-  const source = raw._meta || raw.mcp_tool_result?._meta || raw.call_tool_result?._meta || raw.structuredContent || raw.arguments || raw;
-  let file = source.file || raw.file;
-  if (typeof file === 'string' && file) {
-    file = { file_id: file };
-  } else if (!file && (typeof source.file_id === 'string' || typeof source.download_url === 'string')) {
-    file = {
-      file_id: source.file_id,
-      download_url: source.download_url,
-      file_name: source.file_name,
-    };
-  }
-  if (!file || (typeof file.file_id !== 'string' && typeof file.download_url !== 'string')) {
-    return null;
-  }
-  return {
-    file,
-    fileName: source.file_name || raw.file_name || file.file_name,
-    edits: Array.isArray(source.edits) ? source.edits : (Array.isArray(raw.edits) ? raw.edits : []),
-  };
+function updateDownload() {
+  const supportsDownload = connected && !!app.getHostCapabilities()?.downloadFile;
+  const supportsLink = !!remoteDownload && (typeof window.openai?.openExternal === 'function' || (connected && !!app.getHostCapabilities()?.openLinks));
+  downloadButton.disabled = !bytes || !(supportsDownload || supportsLink);
+  const help = document.querySelector('#download-help');
+  help.hidden = !bytes || supportsDownload;
+  help.textContent = supportsLink
+    ? 'This host opens the original file link for download. Your browser may ask where to save it.'
+    : 'This host cannot download this file from the app. Use the completed HTML attachment in the conversation.';
+  downloadButton.title = supportsDownload ? 'Download the original output bytes' : 'Open the original output file through the host';
 }
-
-async function showFile({ file, fileName, edits }) {
-  const key = `${file.file_id || ''}:${file.download_url ? 'url' : 'nourl'}:${edits.length}`;
-  if (key === loadedKey || (html && file.file_id && loadedKey.startsWith(`${file.file_id}:`))) return;
-  loadedKey = key;
+function showBytes(value, name) {
+  if (!value.byteLength) throw new Error('The HTML file is empty.');
+  const text = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(value);
+  renderEmail(preview, text);
+  bytes = value;
+  html = text;
+  filename = /\.html?$/i.test(name || '') ? name.replace(/^.*[\\/]/, '') : 'completed-email.html';
+  document.querySelector('#title').textContent = filename;
+  sourceText.value = text;
+  copyButton.disabled = false;
+  updateDownload();
+  message('Email loaded. Remote images, active content and link navigation are disabled in this display copy.');
+}
+async function showFile(input, force = false) {
+  if (input.unsupportedEdits) { reset(); message('Replacement payloads are not supported. Use the completed output file.'); return; }
+  const { file, fileName } = input;
+  const key = JSON.stringify([file.file_id, file.download_url, fileName]);
+  if (!force && (key === loadedKey || key === loadingKey)) return;
+  current = input;
+  const version = ++loadVersion;
+  activeController?.abort();
+  const controller = new AbortController();
+  activeController = controller;
+  const timeout = setTimeout(() => controller.abort(), LOAD_TIMEOUT_MS);
+  loadedKey = '';
+  loadingKey = key;
+  reset();
+  retryButton.hidden = true;
+  message('Loading completed email…');
   try {
-    let downloadUrl = '';
+    let url = file.download_url;
     if (file.file_id && window.openai?.getFileDownloadUrl) {
       try {
-        const result = await window.openai.getFileDownloadUrl({ fileId: file.file_id });
-        downloadUrl = result?.downloadUrl || result?.download_url || '';
-      } catch {
-        downloadUrl = '';
-      }
+        const fresh = await withDeadline(window.openai.getFileDownloadUrl({ fileId: file.file_id }), controller.signal);
+        url = fresh?.downloadUrl || fresh?.download_url || url;
+      } catch (error) { if (controller.signal.aborted) throw error; }
     }
-    if (!downloadUrl && typeof file.download_url === 'string') {
-      downloadUrl = file.download_url;
-    }
-    if (!downloadUrl) throw new Error('No file URL');
-    const response = await fetch(downloadUrl);
-    if (!response.ok) throw new Error('File download failed');
-    let content = await response.text();
-    if (edits.length > 0 && edits.every((e) => typeof e?.old === 'string' && typeof e?.new === 'string' && content.includes(e.old))) {
-      for (const edit of edits) {
-        content = content.replaceAll(edit.old, edit.new);
-      }
-    }
-    html = content;
-    const candidateName = fileName || file.file_name || '';
-    filename = /\.html?$/i.test(candidateName)
-      ? candidateName.replace(/^.*[\\/]/, '')
-      : 'completed-email.html';
-    document.querySelector('#title').textContent = filename;
-    const policy = "default-src 'none'; style-src 'unsafe-inline'; img-src data: blob:; font-src data:; base-uri 'none'; form-action 'none'";
-    frame.srcdoc = `<meta http-equiv="Content-Security-Policy" content="${policy}">` + html;
-    copyButton.disabled = false;
-    downloadButton.disabled = false;
-    message('Preview ready. Scripts, external resources and form submissions are blocked.');
-    notifySize();
-  } catch {
-    loadedKey = '';
-    message('Could not read this HTML file. Use the file link in the conversation.');
-    notifySize();
+    if (version !== loadVersion) return;
+    const resolvedUrl = fileUrl(url);
+    const response = await fetch(resolvedUrl, { signal: controller.signal, credentials: 'omit', referrerPolicy: 'no-referrer' });
+    const value = await readBytes(response, controller.signal);
+    if (version !== loadVersion) return;
+    remoteDownload = { file, url: resolvedUrl };
+    showBytes(value, fileName);
+    loadedKey = key;
+  } catch (error) {
+    if (version !== loadVersion) return;
+    reset();
+    retryButton.hidden = false;
+    message(controller.signal.aborted ? 'File loading timed out. Retry or open the completed HTML file below.' : `${error.message || 'Could not read this file.'} You can also open the completed HTML file below; it stays in this app.`);
+  } finally {
+    clearTimeout(timeout);
+    if (version === loadVersion) loadingKey = '';
   }
 }
-
-function handleInput(raw) {
-  const parsed = normalizeInput(raw);
-  if (parsed) void showFile(parsed);
+function handleResult(raw) {
+  const input = extractFile(raw);
+  if (input) void showFile(input);
 }
+// Register callbacks before connect: the host may deliver results immediately
+// after initialization. SDK requests, IDs, capability checks and teardown use
+// the official MCP Apps transport, not a separate handwritten RPC protocol.
+app.ontoolresult = handleResult;
+app.ontoolcancelled = () => { activeController?.abort(); reset(); message('Preview cancelled.'); };
+app.onteardown = async () => { activeController?.abort(); return {}; };
+void app.connect(undefined, { timeout: 10000 }).then(() => {
+  connected = true;
+  updateDownload();
+  if (current && !bytes && !loadingKey) void showFile(current, true);
+}).catch(() => { message('The app bridge could not connect. Open the completed HTML file below to preview it locally.'); });
 
-// Keep the MCP Apps bridge small: the full SDK client adds hundreds of KB to
-// this otherwise self-contained resource. This view only needs initialize and
-// the standard tool-input / tool-result notifications.
-const INIT_REQUEST_ID = 1;
-
-window.addEventListener('message', (event) => {
-  if (event.source !== window.parent) return;
-  const packet = event.data;
-  if (packet?.jsonrpc !== '2.0') return;
-
-  if (packet.id === INIT_REQUEST_ID && packet.result) {
-    window.parent.postMessage({
-      jsonrpc: '2.0',
-      method: 'ui/notifications/initialized',
-      params: {},
-    }, '*');
-    notifySize();
-    return;
-  }
-
-  if (packet.method === 'ui/initialize' && packet.id !== undefined) {
-    window.parent.postMessage({
-      jsonrpc: '2.0',
-      id: packet.id,
-      result: {
-        protocolVersion: packet.params?.protocolVersion || '2026-01-26',
-        hostInfo: { name: 'MCP Apps host', version: '1.0.0' },
-        hostCapabilities: {},
-        hostContext: {},
-      },
-    }, '*');
-    window.parent.postMessage({
-      jsonrpc: '2.0',
-      method: 'ui/notifications/initialized',
-      params: {},
-    }, '*');
-    notifySize();
-    return;
-  }
-
-  if (packet.method === 'ui/notifications/tool-input') {
-    handleInput(packet.params);
-  }
-  if (packet.method === 'ui/notifications/tool-result') {
-    handleInput(packet.params);
-  }
+// ChatGPT-only file helpers and result aliases supplement the standard bridge.
+window.addEventListener('openai:set_globals', event => {
+  handleResult(event.detail?.globals?.toolResponseMetadata);
+  handleResult(event.detail?.globals?.toolOutput);
 });
+handleResult(window.openai?.toolResponseMetadata);
+handleResult(window.openai?.toolOutput);
+retryButton.addEventListener('click', () => { if (current) void showFile(current, true); });
 
-window.parent?.postMessage({
-  jsonrpc: '2.0',
-  id: INIT_REQUEST_ID,
-  method: 'ui/initialize',
-  params: {
-    protocolVersion: '2026-01-26',
-    appInfo: { name: 'd365-email-studio', version: '0.1.0' },
-    appCapabilities: { availableDisplayModes: ['inline'] },
-  },
-}, '*');
-
-window.addEventListener('openai:set_globals', (event) => {
-  const globals = event.detail?.globals;
-  handleInput(globals?.toolResponseMetadata);
-  handleInput(globals?.toolOutput);
-  handleInput(globals?.toolInput);
+document.querySelector('#local-file').addEventListener('change', async event => {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  const version = ++loadVersion;
+  activeController?.abort();
+  current = undefined;
+  retryButton.hidden = true;
+  loadedKey = '';
+  loadingKey = '';
+  reset();
+  try {
+    if (file.size > MAX_FILE_BYTES) throw new Error('This preview supports HTML files up to 5 MiB.');
+    const value = new Uint8Array(await file.arrayBuffer());
+    if (version !== loadVersion) return;
+    showBytes(value, file.name);
+  } catch (error) { message(error.message || 'Could not open that HTML file.'); }
 });
-handleInput(window.openai?.toolResponseMetadata);
-handleInput(window.openai?.toolOutput);
-handleInput(window.openai?.toolInput);
-notifySize();
-
 copyButton.addEventListener('click', async () => {
-  try {
-    await navigator.clipboard.writeText(html);
-    message('Complete HTML copied.');
-  } catch {
-    message('Copy failed. Open the file and copy its contents instead.');
-  }
+  try { await navigator.clipboard.writeText(html); message('Complete HTML copied.'); }
+  catch { sourceText.closest('details').open = true; sourceText.focus(); sourceText.select(); message('Automatic copy is unavailable here. The complete HTML is selected below; use your copy shortcut.'); }
 });
-
-downloadButton.addEventListener('click', () => {
+downloadButton.addEventListener('click', async () => {
+  if (!bytes) return;
+  const value = bytes;
+  const name = filename;
+  const remote = remoteDownload;
+  downloadButton.disabled = true;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), LOAD_TIMEOUT_MS);
   try {
-    const url = URL.createObjectURL(new Blob([html], { type: 'text/html;charset=utf-8' }));
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    link.click();
-    setTimeout(() => URL.revokeObjectURL(url), 60_000);
-    message('HTML download started.');
-  } catch {
-    message('Download unavailable in this host. Use the file link in the conversation.');
-  }
+    if (connected && app.getHostCapabilities()?.downloadFile) {
+      const result = await app.downloadFile({ contents: [{ type: 'resource', resource: {
+        uri: `file:///${encodeURIComponent(name)}`, mimeType: 'text/html', blob: base64(value),
+      } }] }, { timeout: 30000 });
+      message(result.isError ? 'Download was cancelled or denied. Use the completed file attachment in the conversation.' : 'The host accepted the HTML download.');
+    } else if (remote) {
+      let url = remote.url;
+      if (remote.file.file_id && window.openai?.getFileDownloadUrl) {
+        const fresh = await withDeadline(window.openai.getFileDownloadUrl({ fileId: remote.file.file_id }), controller.signal);
+        url = fresh?.downloadUrl || fresh?.download_url || url;
+      }
+      url = fileUrl(url);
+      if (connected && app.getHostCapabilities()?.openLinks) {
+        const result = await app.openLink({ url }, { timeout: 15000 });
+        if (result.isError) throw new Error('File link was denied');
+      } else if (typeof window.openai?.openExternal === 'function') {
+        await window.openai.openExternal({ href: url, redirectUrl: false });
+      } else throw new Error('No supported host file action');
+      message('Opened the original HTML file through the host. Save it from your browser if prompted.');
+    } else throw new Error('No output file reference');
+  } catch { message('This host could not open the download. Use the completed HTML file attachment in the conversation.'); }
+  finally { clearTimeout(timer); updateDownload(); }
 });

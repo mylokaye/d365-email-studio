@@ -37,20 +37,21 @@ Longer translations may overflow fixed Outlook button dimensions. Preserve dimen
 
 ## Work and verification
 
-### Required inline preview handoff
+### Inline preview handoff
 
-After every successful edit or translation, create the complete output file and
-validate it as described below, then immediately call the `show_completed_email`
-tool to render the inline preview in chat. Pass the completed output file in
-`file` and the output filename in `file_name`. If your execution environment
-only assigns a ChatGPT file ID (`file_...`) to the user-uploaded input email
-rather than files created in `/mnt/data`, pass the uploaded input email's file
-ID in `file`, set `file_name` to the output filename, and pass the exact list of
-`{ old, new }` string replacements in `edits` so the client-side preview widget
-renders the exact updated HTML. Do not finish with only a file attachment or
-say that the email was sent to the preview unless `show_completed_email` was
-actually invoked. If the tool is unavailable or fails, say that plainly and
-provide the output file link.
+After successful local validation, call `show_completed_email` only if the host
+can provide a file reference for the completed output itself. Pass only that
+reference in `file`; use a generic filename such as `completed-email.html`.
+Never pass the original input as a substitute. Never send email HTML, snippets,
+replacement lists, customer data, or local paths to Cloudflare or another
+external service. If the host cannot reference the completed file, skip the
+preview and provide the validated output file link with a plain explanation.
+The Worker receives temporary file reference metadata but never fetches the file.
+The UI uses the MCP Apps bridge and host-mediated downloads. Its sanitized,
+isolated display copy must never replace the complete validated output file.
+Always include that output file link so a host without download support still
+has a usable result. Do not claim the preview loaded or a download succeeded
+merely because the tool call returned; report any visible host error honestly.
 
 1. Read the source and user request. Identify each requested editable occurrence, its Outlook counterpart, protected expressions, and functional links. Ask only about ambiguities that affect the actual edit.
 2. Save a separate output file, preserving the original encoding and line endings. Escape replacement content for its HTML context; do not inject markup through text or attribute values. Keep HTML editing and validation local. You may fetch an existing image URL when needed for the requested edit, such as inspecting an image to describe it in an existing alt attribute. Do not upload the email HTML, its contents, or downloaded images to external services. Use clear surrounding context or a locally supplied image when sufficient; ask for the intended alt text if the image cannot be inspected or its meaning remains uncertain. This does not authorize adding a missing alt attribute.
@@ -60,4 +61,4 @@ provide the output file link.
 
    Fix rejected edits by returning to the source; never weaken the guard to make an output pass. Unsupported or ambiguous markup requires stopping the affected edit, not bypassing validation.
 4. Review the actual diff against the request: translation completeness and meaning, no omitted content, intact tokens and functional URLs, and consistent Outlook counterparts. The guard checks the allowlist, meaningful text around protected tokens, adjacent image-wrapper fallbacks, and tracking-linked Outlook/standard buttons. Other fallback patterns require manual review. It cannot prove meaning, authorization, or full template recognition. Inspect those manually. Do not open the email in Chrome, Chrome DevTools, another browser, or a browser automation tool for this workflow. Do not request browser-tool approval. The inline plugin preview is the only preview step here; recommend a separate Dynamics preview/test-send to the user when rendering needs confirmation.
-5. After validation, call `show_completed_email` with the completed output file in `file` and `file_name` set to the output filename (or if only the user-uploaded email has a ChatGPT file ID for `openai/fileParams`, pass that uploaded file ID in `file` along with `file_name` and the exact `{ old, new }` replacements in `edits`). This is required after every successful edit or translation when the tool is available. The ChatGPT file adapter passes a temporary file reference to the MCP tool; the Cloudflare Worker does not fetch or store the email HTML. This tool call renders the preview and Copy HTML / Download HTML buttons inline in chat. Return a brief change summary, the downloadable output file link, and an honest verification result. Never return an abbreviated document or claim Dynamics acceptance/rendering from a structural pass. Recommend Dynamics preview/test-send when rendering needs confirmation. Never publish or send email as part of this skill.
+5. After validation, call `show_completed_email` using only a reference to the completed output file, as described above. Never send replacement text or the input file for reconstruction. If unavailable or unsupported, provide the validated output file link. Return a brief change summary and honest verification result. Never return an abbreviated document or claim Dynamics acceptance/rendering from a structural pass. Recommend Dynamics preview/test-send when rendering needs confirmation. Never publish or send email as part of this skill.

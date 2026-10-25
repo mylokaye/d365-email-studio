@@ -17,7 +17,7 @@
   },
   "requires_local_executor": true,
   "name": "d365-email-studio",
-  "version": "0.1.8",
+  "version": "0.1.11",
   "description": "Edit and translate existing Dynamics 365 email HTML with local structural validation and an optional inline preview.",
   "author": {
     "name": "Mylo Kaye",

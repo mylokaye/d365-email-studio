@@ -11,5 +11,5 @@ const result = await build({
 });
 const template = await readFile('src/viewer.html', 'utf8');
 const script = result.outputFiles[0].text.replaceAll('</script', '<\\/script');
-const html = template.replace('<!-- VIEWER_SCRIPT -->', `<script>${script}</script>`);
+const html = template.replace('<!-- VIEWER_SCRIPT -->', () => `<script>${script}</script>`);
 await writeFile('src/viewer-content.js', `export const viewerHtml = ${JSON.stringify(html)};\n`);

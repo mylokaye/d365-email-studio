@@ -3,7 +3,7 @@ import json
 import sys
 from pathlib import Path
 
-validator = Path(sys.argv[1]) if len(sys.argv)>1 else Path('/Users/mylo/.codex/skills/d365-email-studio/scripts/validate_email.py')
+validator = Path(sys.argv[1]) if len(sys.argv)>1 else Path(__file__).resolve().parents[1] / 'd365-email-studio/scripts/validate_email.py'
 spec=importlib.util.spec_from_file_location('guard',validator); guard=importlib.util.module_from_spec(spec); spec.loader.exec_module(guard)
 base=Path(__file__).with_name('exported-original.html').read_bytes().decode()
 fixture='<html lang="en-US"><body><p>Hello {{Name}} welcome</p><img src="https://example.com/a" alt="Logo"></body></html>'
@@ -28,6 +28,10 @@ cases=[
 ('new template inserted',fixture,fixture.replace('Hello','{{Injected}}Hello'),False),
 ]
 results=[]
+for name, original, updated, expected in cases:
+ if name != 'baseline':
+  assert original != updated, f'{name}: mutation did not change fixture'
+
 for name,original,updated,expected in cases:
  try: guard.validate(original,updated); accepted=True; reason='accepted'
  except ValueError as e: accepted=False; reason=str(e)

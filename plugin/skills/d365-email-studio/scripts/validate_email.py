@@ -113,7 +113,7 @@ def counterpart_values(source):
     for match in re.finditer(r'<(v:shape|a)\b([^>]*data-msdyn-tracking-id[^>]*)>(.*?)</\1>', source, re.S | re.I):
         tag = '<' + match.group(1) + match.group(2) + '>'
         identity = attribute(tag, 'data-msdyn-tracking-id')
-        label = re.sub(r'<[^>]*>', '', match.group(3))
+        label = ' '.join(html.unescape(re.sub(r'<[^>]*>', '', match.group(3))).split())
         buttons.setdefault(identity, []).append((attribute(tag, 'href'), label))
     for values in buttons.values():
         if len(values) == 2:
