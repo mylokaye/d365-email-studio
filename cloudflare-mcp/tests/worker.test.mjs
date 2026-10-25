@@ -10,15 +10,16 @@ const source = (await readFile(new URL('../src/index.js', import.meta.url), 'utf
   .replace(/^import .*;\n/gm, '').replace('export default {', 'globalThis.worker = {');
 function harness() {
   const registered = new Map();
+  const resources = [];
   const context = vm.createContext({
     z, URL, Request, Response, Uint8Array, skill: 'guide', validator: 'validator', viewerHtml: '<html></html>',
     McpServer: class { registerTool(name, config, handler) { registered.set(name, { config, handler }); } },
-    registerAppResource() {}, RESOURCE_MIME_TYPE: 'text/html',
+    registerAppResource(server, name, uri, config, handler) { resources.push({ name, uri, config, handler }); }, RESOURCE_MIME_TYPE: 'text/html',
     registerAppTool(server, name, config, handler) { registered.set(name, { config, handler }); },
     createMcpHandler(createServer) { createServer(); return async () => new Response('handled'); },
   });
   vm.runInContext(source, context);
-  return { worker: context.worker, registered };
+  return { worker: context.worker, registered, resources };
 }
 const file = { file_id: 'file_output', download_url: 'https://files.oaiusercontent.com/output.html', mime_type: 'text/html' };
 
@@ -63,4 +64,22 @@ test('bounded requests reach the handler', async () => {
   const { worker } = harness();
   const request = new Request('https://example.test/mcp', { method: 'POST', body: '{}' });
   assert.equal(await (await worker.fetch(request)).text(), 'handled');
+});
+
+
+test('preview policy preserves the host-confirmed explicit Dynamics image origin', async () => {
+  const { resources, registered } = harness();
+  const uri = registered.get('show_completed_email').config._meta.ui.resourceUri;
+  const resource = resources.find(item => item.uri === uri);
+  assert.ok(resource);
+  const { contents } = await resource.handler();
+  for (const metadata of [resource.config._meta, contents[0]._meta]) {
+    const origins = Array.from(metadata.ui.csp.resourceDomains);
+    assert.ok(origins.includes('https://emailui-usa1.mkt.dynamics.com'));
+    for (const origin of origins) {
+      assert.equal(new URL(origin).origin, origin);
+      assert.ok(!origin.includes('*') && !origin.includes('%'));
+    }
+    assert.equal(metadata.ui.csp.frameDomains.length, 0);
+  }
 });

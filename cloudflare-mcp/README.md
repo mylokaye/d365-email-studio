@@ -55,3 +55,30 @@ host percent-encodes wildcard hosts into invalid CSP sources. Image requests
 go directly from the host browser to the image server and may trigger tracking
 pixels. Scripts, frames, forms, link navigation, and other remote CSS resources
 remain disabled. Downloaded HTML bytes are unchanged.
+
+## Confirmed working baseline — 25 October 2026
+
+The user confirmed that the inline preview displays images correctly in the
+Codex desktop host after deployment `04f947f0-5685-480c-9edc-82ae6c15fcb1`.
+The active resource is `ui://d365-email-studio/inline-preview-v9.html`.
+The confirmation covers the example3 email's inline images and background image.
+Other image hosts and other host applications have not been confirmed.
+
+Preserve this baseline carefully:
+
+- Keep the explicit image origin `https://emailui-usa1.mkt.dynamics.com`.
+  Do not replace it with `https://*`: the desktop host converts that value to
+  `https://%2A`, which is invalid CSP and blocks images.
+- Keep the sanitized display copy separate from the original download bytes.
+  Preserve the file-reference handoff, host bridge, and local validation workflow.
+- Keep scripts, frames, forms, and email link navigation disabled.
+  Image requests can contact image hosts and trigger tracking pixels.
+- Make small, scoped changes. For renderer, CSP, bridge, or download changes,
+  run `npm test`, `npm run build`, and the live smoke check after deployment.
+  Check image and background loading in the actual Codex host before calling
+  a replacement baseline confirmed; a standalone browser check is insufficient.
+- Keep a recoverable Git checkpoint and the previous deployment version before
+  changing this working path. Bump the resource URI when cache invalidation is needed,
+  retaining legacy resource aliases.
+
+Live check: `node tests/smoke-mcp.mjs https://d365-email-studio.drbn8f85yx.workers.dev/mcp`.
