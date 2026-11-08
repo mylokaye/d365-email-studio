@@ -1,8 +1,10 @@
+import { VERSION } from '../src/version.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import { readFile } from 'node:fs/promises';
 import { z } from 'zod';
+import { IMAGE_ORIGINS } from '../src/image-policy.js';
 
 // Exercise the real registration schemas and fetch guard without starting a
 // Worker runtime. The SDK bindings are replaced at their registration boundary.
@@ -12,7 +14,7 @@ function harness() {
   const registered = new Map();
   const resources = [];
   const context = vm.createContext({
-    z, URL, Request, Response, Uint8Array, skill: 'guide', validator: 'validator', viewerHtml: '<html></html>',
+    z, URL, Request, Response, Uint8Array, IMAGE_ORIGINS, VERSION, skill: 'guide', validator: 'validator', viewerHtml: '<html></html>',
     McpServer: class { registerTool(name, config, handler) { registered.set(name, { config, handler }); } },
     registerAppResource(server, name, uri, config, handler) { resources.push({ name, uri, config, handler }); }, RESOURCE_MIME_TYPE: 'text/html',
     registerAppTool(server, name, config, handler) { registered.set(name, { config, handler }); },

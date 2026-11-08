@@ -30,8 +30,10 @@ for name, updated, expected in cases:
     print('PASS:', name)
 
 # Compact designer fixture retains coverage for metadata and tracking not present
-# in every shipped example. Both before/after inputs remain under test control.
-source = '<html lang="en-US"><body><a href="https://example.com#_msdynmkt_linkid=abc" data-lookup-name="Event" data-containerid="container1">Link</a><img src="https://example.com/a" data-image-file-id="asset1"></body></html>'
+# in every shipped example. Product metadata denotes an ordinary destination;
+# Event metadata is protected by the functional-link regressions in test_reliability.py.
+# Both before/after inputs remain under test control.
+source = '<html lang="en-US"><body><a href="https://example.com#_msdynmkt_linkid=abc" data-lookup-name="Product" data-containerid="container1">Link</a><img src="https://example.com/a" data-image-file-id="asset1"></body></html>'
 cases = []
 change('language', 'lang="en-US"', 'lang="fr-FR"', True)
 change('label', '>Link<', '>Lien<', True)
@@ -39,7 +41,7 @@ change('destination retaining tracking', 'https://example.com#', 'https://other.
 change('tracking removed', '#_msdynmkt_linkid=abc', '', False)
 change('tracking changed', '_msdynmkt_linkid=abc', '_msdynmkt_linkid=other', False)
 change('container ID', 'data-containerid="container1"', 'data-containerid="other"', False)
-change('lookup metadata', 'data-lookup-name="Event"', 'data-lookup-name="Other"', False)
+change('lookup metadata', 'data-lookup-name="Product"', 'data-lookup-name="Other"', False)
 change('asset metadata', 'data-image-file-id="asset1"', 'data-image-file-id="other"', False)
 change('image source', 'src="https://example.com/a"', 'src="https://example.com/b"', True)
 change('missing alt added', '<img src=', '<img alt="Logo" src=', False)

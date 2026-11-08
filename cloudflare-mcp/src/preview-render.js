@@ -1,4 +1,5 @@
 import DOMPurify from 'dompurify';
+import { IMAGE_ORIGINS } from './image-policy.js';
 
 // These transformations affect only the display copy. The original output
 // bytes are kept separately and are the only bytes offered for download.
@@ -9,13 +10,21 @@ export function safeImageUrl(value) {
     return url.protocol === 'https:' && !url.username && !url.password ? url.href : '';
   } catch { return ''; }
 }
-export function safeDeclarations(style) {
+function permittedImage(value, blockedOrigins) {
+  const url = safeImageUrl(value);
+  if (!url) return '';
+  const origin = new URL(url).origin;
+  if (IMAGE_ORIGINS.includes(origin)) return url;
+  blockedOrigins.add(origin);
+  return '';
+}
+export function safeDeclarations(style, blockedOrigins = new Set()) {
   const declarations = [];
   for (const property of Array.from(style)) {
     const value = style.getPropertyValue(property);
     if (property === 'background-image') {
       const match = /^url\(["']?(https:\/\/[^"'()\\\s]+)["']?\)$/i.exec(value);
-      const url = match && safeImageUrl(match[1]);
+      const url = match && permittedImage(match[1], blockedOrigins);
       if (url) declarations.push(`background-image:url("${url}")`);
     } else if (/^background-(?:size|position|repeat|origin|clip|attachment)$/.test(property) && !/[\\@]|\/\*|(?:url|image-set|expression|var|attr)\s*\(/i.test(value)) {
       declarations.push(`${property}:${value}`);
@@ -25,16 +34,17 @@ export function safeDeclarations(style) {
   }
   return declarations.join(';');
 }
-function safeRules(rules) {
+function safeRules(rules, blockedOrigins) {
   let css = '';
   for (const rule of Array.from(rules)) {
-    if (rule.type === 1) css += `${rule.selectorText}{${safeDeclarations(rule.style)}}`;
-    else if (rule.type === 4) css += `@media ${rule.conditionText}{${safeRules(rule.cssRules)}}`;
+    if (rule.type === 1) css += `${rule.selectorText}{${safeDeclarations(rule.style, blockedOrigins)}}`;
+    else if (rule.type === 4) css += `@media ${rule.conditionText}{${safeRules(rule.cssRules, blockedOrigins)}}`;
   }
   return css;
 }
 
-export function renderEmail(root, html) {
+export function renderEmail(root, html, onImageError = () => {}) {
+  const blockedOrigins = new Set();
   const sanitized = DOMPurify.sanitize(html, {
     WHOLE_DOCUMENT: true,
     RETURN_DOM: true,
@@ -43,10 +53,11 @@ export function renderEmail(root, html) {
     FORBID_ATTR: ['srcset', 'href', 'xlink:href', 'poster', 'background', 'action', 'formaction', 'ping', 'autofocus', 'contenteditable', 'is', 'attributionsrc'],
   });
   for (const element of sanitized.querySelectorAll('[src]')) {
-    const url = element.localName === 'img' && safeImageUrl(element.getAttribute('src'));
+    const url = element.localName === 'img' && permittedImage(element.getAttribute('src'), blockedOrigins);
     if (url) {
       element.setAttribute('referrerpolicy', 'no-referrer');
       element.setAttribute('src', url);
+      element.addEventListener('error', () => { if (root.contains(element)) onImageError(); }, { once: true });
     } else element.removeAttribute('src');
   }
   const styles = [];
@@ -57,13 +68,13 @@ export function renderEmail(root, html) {
       const sheet = new CSSStyleSheet();
       sheet.replaceSync(element.textContent);
       const style = document.createElement('style');
-      style.textContent = safeRules(sheet.cssRules);
+      style.textContent = safeRules(sheet.cssRules, blockedOrigins);
       styles.push(style);
     }
     element.remove();
   }
   for (const element of sanitized.querySelectorAll('[style]')) {
-    const css = safeDeclarations(element.style);
+    const css = safeDeclarations(element.style, blockedOrigins);
     if (css) element.setAttribute('style', css);
     else element.removeAttribute('style');
   }
@@ -71,4 +82,5 @@ export function renderEmail(root, html) {
   reset.textContent = ':host{display:block;color:#111;background:white;font:16px Arial,sans-serif}body{display:block;margin:8px}img{max-width:100%}a{cursor:default}';
   const body = sanitized.querySelector('body') || sanitized;
   root.replaceChildren(reset, ...styles, body);
+  return { blockedOrigins: [...blockedOrigins] };
 }

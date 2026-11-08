@@ -4,7 +4,7 @@ Live endpoint: https://d365-email-studio.drbn8f85yx.workers.dev/mcp
 
 The public, unauthenticated endpoint exposes two guide tools with no arguments:
 `get_email_studio_guide` and `get_email_validator_source`. These return the repository
-skill and Python validator. It also serves an inline HTML preview.
+skill (including the complete edit-plan reference) and Python validator. It also serves an inline HTML preview.
 For an inline preview, ChatGPT passes a temporary file URL and ID to
 `show_completed_email`; the Worker returns only the file reference metadata without fetching the email. The UI retrieves the file through ChatGPT's file API. The Worker has no email processing, storage bindings, outbound
 application requests, or application logging. Never submit raw email HTML or customer
@@ -13,7 +13,7 @@ data to it. Normal Cloudflare network handling still applies to file references 
 Email editing and structural validation run locally using the plugin bundle.
 The private plugin package lives in `../plugin/` and requires local execution.
 
-Run `npm ci`, then `node sync-content.mjs` after skill/validator changes.
+Run `npm ci` and `npx playwright install chromium`, then `node sync-content.mjs` after skill/validator changes.
 The build also bundles the inline preview into `src/viewer-content.js`.
 Use `npm run dev` for local development and `npm run build` for a dry run.
 To deploy later, authenticate Wrangler with `npx wrangler login` and run
@@ -27,7 +27,8 @@ regenerates `src/content.js` from the skill before bundling; the generated file
 does not need to be committed. Running from the repository root fails because
 the Worker configuration and dependencies live in this subdirectory.
 
-Verification: run `npm test` for preview lifecycle and MCP privacy checks, and
+Verification: run `npm test` for MCP artifact/privacy checks and Chromium preview
+lifecycle, sanitization, image-warning and exact-byte download checks, and
 `npm run build` for a Worker dry run. With a local Worker running, use
 `node tests/smoke-mcp.mjs`; pass the MCP endpoint URL to check a deployment. From the repository root run:
 
@@ -35,6 +36,9 @@ Verification: run `npm test` for preview lifecycle and MCP privacy checks, and
 python3 d365-email-studio/scripts/test_validator.py
 python3 stress-tests/test_adversarial.py
 python3 stress-tests/test_designer.py
+python3 d365-email-studio/scripts/test_reliability.py
+python3 scripts/test_package.py
+python3 scripts/package_plugin.py --check
 ```
 
 The preview accepts only a completed file reference. It does not accept HTML or
@@ -55,6 +59,12 @@ host percent-encodes wildcard hosts into invalid CSP sources. Image requests
 go directly from the host browser to the image server and may trigger tracking
 pixels. Scripts, frames, forms, link navigation, and other remote CSS resources
 remain disabled. Downloaded HTML bytes are unchanged.
+
+The local 0.1.12 build uses `inline-preview-v10.html`, retaining v9 and earlier
+resource aliases. Its image-origin policy is shared with the renderer. Unsupported
+image hosts are identified in a persistent preview warning; supported inline images
+that fail to load also report a warning. The original source/download is unchanged.
+These local checks do not establish a new actual-host baseline.
 
 ## Confirmed working baseline — 25 October 2026
 

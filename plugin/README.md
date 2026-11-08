@@ -34,3 +34,12 @@ HTTPS images are enabled, while scripts are blocked in
 the preview, so final rendering still needs a Dynamics preview and test send.
 The source lives in the adjacent
 `d365-email-studio/` directory; refresh the package when that skill changes.
+
+## Local package build
+
+Version 0.1.12 is built from the canonical skill with
+`python3 scripts/package_plugin.py` from the repository root. Run the same command
+with `--check` to verify the skill copies, versioned ZIP and content hashes.
+The MCP guide includes the edit-plan specification for clients retrieving only
+the guide tools. Publishing the package and deploying the Worker are separate
+actions; building locally does neither.

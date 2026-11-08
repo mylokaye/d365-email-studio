@@ -1,8 +1,9 @@
+import { VERSION } from './version.js';
 import { App } from '@modelcontextprotocol/ext-apps';
 import { extractFile, fileUrl, readBytes, base64, LOAD_TIMEOUT_MS, MAX_FILE_BYTES } from './preview-data.js';
 import { renderEmail } from './preview-render.js';
 
-const app = new App({ name: 'd365-email-studio', version: '0.1.11' }, { availableDisplayModes: ['inline', 'fullscreen'] });
+const app = new App({ name: 'd365-email-studio', version: VERSION }, { availableDisplayModes: ['inline', 'fullscreen'] });
 const preview = document.querySelector('#preview').attachShadow({ mode: 'open' });
 const copyButton = document.querySelector('#copy');
 const downloadButton = document.querySelector('#download');
@@ -19,15 +20,29 @@ let loadVersion = 0;
 let activeController;
 let connected = false;
 let remoteDownload;
+let disposed = false;
+const imageWarning = document.querySelector('#image-warning');
 function message(text) { status.textContent = text; }
 function reset() {
   bytes = undefined;
   remoteDownload = undefined;
   html = '';
   sourceText.value = '';
+  imageWarning.textContent = '';
+  document.querySelector('#download-help').hidden = true;
   preview.replaceChildren();
   copyButton.disabled = true;
   downloadButton.disabled = true;
+}
+function cancelPreview() {
+  ++loadVersion;
+  activeController?.abort();
+  activeController = undefined;
+  current = undefined;
+  loadedKey = '';
+  loadingKey = '';
+  retryButton.hidden = true;
+  reset();
 }
 function withDeadline(promise, signal) {
   return new Promise((resolve, reject) => {
@@ -51,7 +66,17 @@ function updateDownload() {
 function showBytes(value, name) {
   if (!value.byteLength) throw new Error('The HTML file is empty.');
   const text = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(value);
-  renderEmail(preview, text);
+  let failedImages = 0;
+  let blockedOrigins = [];
+  const updateImageWarning = () => {
+    imageWarning.textContent = [
+      blockedOrigins.length ? `Some images are unavailable in this preview because their hosts are not supported: ${blockedOrigins.join(', ')}.` : '',
+      failedImages ? `${failedImages} image(s) could not load.` : '',
+      blockedOrigins.length || failedImages ? 'The complete HTML is unchanged. Check images in Dynamics preview and a test send.' : '',
+    ].filter(Boolean).join(' ');
+  };
+  ({ blockedOrigins } = renderEmail(preview, text, () => { failedImages++; updateImageWarning(); }));
+  updateImageWarning();
   bytes = value;
   html = text;
   filename = /\.html?$/i.test(name || '') ? name.replace(/^.*[\\/]/, '') : 'completed-email.html';
@@ -59,10 +84,11 @@ function showBytes(value, name) {
   sourceText.value = text;
   copyButton.disabled = false;
   updateDownload();
-  message('Email loaded. HTTPS images are enabled. Active content and link navigation are disabled in this display copy.');
+  message('Email loaded. Images from supported hosts are enabled. Active content and link navigation are disabled in this display copy.');
 }
 async function showFile(input, force = false) {
-  if (input.unsupportedEdits) { reset(); message('Replacement payloads are not supported. Use the completed output file.'); return; }
+  if (disposed) return;
+  if (input.unsupportedEdits) { cancelPreview(); message('Replacement payloads are not supported. Use the completed output file.'); return; }
   const { file, fileName } = input;
   const key = JSON.stringify([file.file_id, file.download_url, fileName]);
   if (!force && (key === loadedKey || key === loadingKey)) return;
@@ -105,19 +131,20 @@ async function showFile(input, force = false) {
 }
 function handleResult(raw) {
   const input = extractFile(raw);
-  if (input) void showFile(input);
+  if (input && !disposed) void showFile(input);
 }
 // Register callbacks before connect: the host may deliver results immediately
 // after initialization. SDK requests, IDs, capability checks and teardown use
 // the official MCP Apps transport, not a separate handwritten RPC protocol.
 app.ontoolresult = handleResult;
-app.ontoolcancelled = () => { activeController?.abort(); reset(); message('Preview cancelled.'); };
-app.onteardown = async () => { activeController?.abort(); return {}; };
+app.ontoolcancelled = () => { cancelPreview(); message('Preview cancelled.'); };
+app.onteardown = async () => { disposed = true; connected = false; cancelPreview(); return {}; };
 void app.connect(undefined, { timeout: 10000 }).then(() => {
+  if (disposed) return;
   connected = true;
   updateDownload();
   if (current && !bytes && !loadingKey) void showFile(current, true);
-}).catch(() => { message('The app bridge could not connect. Open the completed HTML file below to preview it locally.'); });
+}).catch(() => { if (disposed) return; message('The app bridge could not connect. Open the completed HTML file below to preview it locally.'); });
 
 // ChatGPT-only file helpers and result aliases supplement the standard bridge.
 window.addEventListener('openai:set_globals', event => {
@@ -130,7 +157,7 @@ retryButton.addEventListener('click', () => { if (current) void showFile(current
 
 document.querySelector('#local-file').addEventListener('change', async event => {
   const file = event.target.files?.[0];
-  if (!file) return;
+  if (!file || disposed) return;
   const version = ++loadVersion;
   activeController?.abort();
   current = undefined;
@@ -143,7 +170,7 @@ document.querySelector('#local-file').addEventListener('change', async event => 
     const value = new Uint8Array(await file.arrayBuffer());
     if (version !== loadVersion) return;
     showBytes(value, file.name);
-  } catch (error) { message(error.message || 'Could not open that HTML file.'); }
+  } catch (error) { if (version === loadVersion) message(error.message || 'Could not open that HTML file.'); }
 });
 copyButton.addEventListener('click', async () => {
   try { await navigator.clipboard.writeText(html); message('Complete HTML copied.'); }

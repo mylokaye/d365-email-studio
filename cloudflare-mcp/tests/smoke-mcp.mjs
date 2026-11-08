@@ -1,3 +1,4 @@
+import { VERSION } from '../src/version.js';
 import assert from 'node:assert/strict';
 const endpoint = process.argv[2] || 'http://localhost:8791/mcp';
 let nextId = 0;
@@ -17,7 +18,7 @@ async function rpc(method, params) {
   return packets.find(packet => packet.id === nextId);
 }
 const initialized = await rpc('initialize', { protocolVersion: '2025-03-26', capabilities: {}, clientInfo: { name: 'release-check', version: '1.0.0' } });
-assert.equal(initialized.result.serverInfo.version, '0.1.11');
+assert.equal(initialized.result.serverInfo.version, VERSION);
 const listed = await rpc('tools/list', {});
 const preview = listed.result.tools.find(tool => tool.name === 'show_completed_email');
 assert.ok(preview);

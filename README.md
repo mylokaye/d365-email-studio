@@ -31,10 +31,28 @@ Example request:
 From the repository root:
 
 ```sh
-python3 d365-email-studio/scripts/validate_email.py original.html updated.html
+python3 d365-email-studio/scripts/validate_email.py original.html --inventory > inventory.json
+# Prepare edits.json from the request and inventory before editing (format linked below).
+python3 d365-email-studio/scripts/validate_email.py original.html --apply-plan edits.json --output updated.html
+python3 d365-email-studio/scripts/validate_email.py original.html updated.html --plan edits.json
 ```
 
-The validator checks permitted source changes. It does not prove translation quality, rendering or acceptance in Dynamics.
+The validator binds exact requested occurrences to the original source hash, freezes
+links/images during translation, and checks protected source and Outlook counterparts.
+See the [edit-plan format](d365-email-studio/references/edit-plan.md). Inputs must be
+UTF-8; the original BOM and untouched line endings are preserved. For diagnostics
+only, use `original.html updated.html --structural-only`. A structural-only pass does
+not complete the workflow. Neither mode proves translation quality, correct request
+interpretation, rendering or acceptance in Dynamics.
+
+Run the local skill regression checks with:
+
+```sh
+python3 d365-email-studio/scripts/test_validator.py
+python3 stress-tests/test_adversarial.py
+python3 stress-tests/test_designer.py
+python3 d365-email-studio/scripts/test_reliability.py
+```
 
 ## Privacy
 
@@ -51,15 +69,29 @@ File editing and validation run locally. The Cloudflare MCP server serves the ed
 
 [GPL-3.0](LICENSE). An independent project by Mylo Kaye, not endorsed by Microsoft.
 
-## Current releases
+## Releases and verification
 
-The linked private App-backed plugin is version **1.0.3**. Its App identity and
-connection are preserved; it now includes the corrected local skill and validator.
-The standalone package and Worker are version **0.1.11**. These use separate
-version histories. Email HTML and replacement lists are never preview-tool inputs;
-only the completed output file reference is passed to the Worker.
+The local standalone package and Worker are version **0.1.12**. The linked private
+App-backed plugin has its separate **1.0.3** history; rebuilding this repository
+neither updates that installation nor deploys the Worker. The older `0.1.11` ZIP
+is retained as a historical release.
 
-Verification: the three Python regression runners, 15 JavaScript checks, Worker
-build, local and live MCP smoke checks passed. The UI uses the official MCP Apps SDK. The rendered preview and exact-byte host
-download were verified in a browser with the SDK protocol; the user confirmed the actual email heading renders in the live card and the
-Download HTML fallback opens or saves the original output file.
+Build and verify the standalone package from canonical skill sources:
+
+```sh
+python3 scripts/package_plugin.py
+python3 scripts/package_plugin.py --check
+python3 scripts/test_package.py
+```
+
+The builder synchronizes the bundled skill, checks manifest versions, includes all
+skill references, and produces `d365-email-studio-plugin-0.1.12.zip` with a SHA-256
+manifest. Archive paths, timestamps and ordering are deterministic. Verification
+fails if the bundle or ZIP differs from the current canonical sources.
+
+For the Worker and preview, run `npm ci`, `npx playwright install chromium`,
+`npm test` and `npm run build` in `cloudflare-mcp/`. The browser tests execute the
+real preview and sanitizer with a test double for the host bridge. They cover
+cancellation, stale loads, local selection, image warnings and exact downloaded
+bytes. Actual Codex-host image loading and download behavior still need host
+confirmation after deployment; see the preserved baseline in the Worker README.

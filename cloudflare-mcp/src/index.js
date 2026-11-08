@@ -1,12 +1,15 @@
+import { VERSION } from './version.js';
 import { createMcpHandler } from 'agents/mcp/server';
 import { McpServer } from '@modelcontextprotocol/server';
 import { z } from 'zod';
 import { registerAppResource, registerAppTool, RESOURCE_MIME_TYPE } from '@modelcontextprotocol/ext-apps/server';
 import { skill, validator } from './content.js';
+import { IMAGE_ORIGINS } from './image-policy.js';
 import { viewerHtml } from './viewer-content.js';
 
-const INLINE_URI = 'ui://d365-email-studio/inline-preview-v9.html';
+const INLINE_URI = 'ui://d365-email-studio/inline-preview-v10.html';
 const LEGACY_INLINE_URIS = [
+  'ui://d365-email-studio/inline-preview-v9.html',
   'ui://d365-email-studio/inline-preview-v8.html',
   'ui://d365-email-studio/inline-preview-v7.html',
   'ui://d365-email-studio/inline-preview-v6.html',
@@ -31,7 +34,7 @@ const UI_META = {
       ],
       // The desktop host URL-normalizes these entries; wildcard hosts become
       // percent-encoded and invalid CSP sources. Use explicit image origins.
-      resourceDomains: ['https://emailui-usa1.mkt.dynamics.com'],
+      resourceDomains: IMAGE_ORIGINS,
       frameDomains: [],
     },
   },
@@ -43,7 +46,7 @@ const UI_META = {
 };
 
 function createServer() {
-  const server = new McpServer({ name: 'd365-email-studio', version: '0.1.11' });
+  const server = new McpServer({ name: 'd365-email-studio', version: VERSION });
   server.registerTool('get_email_studio_guide', {
     description: 'Get the D365 email editing rules. No email HTML is accepted. Edit and validate emails locally using the bundled skill.',
     inputSchema: z.object({}).strict(),
@@ -122,7 +125,7 @@ export default {
   async fetch(request, env, ctx) {
     const path = new URL(request.url).pathname;
     if (path === '/health' && request.method === 'GET') {
-      return Response.json({ name: 'd365-email-studio', version: '0.1.11', emailProcessing: 'local-only' });
+      return Response.json({ name: 'd365-email-studio', version: VERSION, emailProcessing: 'local-only' });
     }
     if (path !== '/mcp') return new Response('Not found', { status: 404 });
     if (Number(request.headers.get('content-length') || 0) > 65536) {

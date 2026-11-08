@@ -1,6 +1,6 @@
 {
   "name": "d365-email-studio-mcp",
-  "version": "0.1.0",
+  "version": "0.1.12",
   "private": true,
   "type": "module",
   "scripts": {
@@ -10,7 +10,8 @@
     "deploy": "wrangler deploy",
     "prebuild": "node sync-content.mjs && node build-viewer.mjs",
     "predeploy": "node sync-content.mjs && node build-viewer.mjs",
-    "test": "node --test tests/*.test.mjs"
+    "test": "node --test tests/*.test.mjs && npm run test:browser",
+    "test:browser": "node --test tests/*.browser.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/ext-apps": "^1.7.5",
@@ -20,7 +21,8 @@
     "zod": "4.6.7"
   },
   "devDependencies": {
+    "@playwright/test": "^1.65.0",
     "esbuild": "^0.28.2",
-    "wrangler": "4.152.0"
+    "wrangler": "4.158.0"
   }
 }
