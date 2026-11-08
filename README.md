@@ -13,7 +13,43 @@ Edit and translate existing **Dynamics 365 Customer Insights – Journeys** emai
 
 It does not create or redesign emails, connect to your Dynamics tenant, send messages or publish campaigns.
 
-## Use it
+## Use the standalone skill
+
+The [local skill ZIP](d365-email-studio-local.zip) contains the complete skill,
+Python validator, edit-plan reference and licence. It needs local file access and
+**Python 3.9+**, with no MCP server, connector, Node.js or inline preview app.
+The original preservation rules and exact edit-plan checks apply. The result is a
+complete validated HTML file with a change summary; rendering still needs a Dynamics
+preview and test send. Content given to your AI host is processed under that host's
+account settings; standalone does not mean the AI model runs offline.
+
+For Codex, extract the ZIP into your skills directory:
+
+```sh
+mkdir -p ~/.codex/skills
+unzip -n d365-email-studio-local.zip -d ~/.codex/skills
+```
+
+The result should be `~/.codex/skills/d365-email-studio-local/SKILL.md` with its
+`scripts/`, `references/` and `agents/` folders alongside it. Start a new chat and
+invoke `$d365-email-studio-local` with an existing email HTML file and your request.
+The `-n` option preserves any existing installation; choose a fresh destination
+when reviewing a later build before replacing an installed copy.
+
+The repository copy is [standalone/d365-email-studio-local/](standalone/d365-email-studio-local/).
+Rebuild and verify it from canonical sources with:
+
+```sh
+python3 scripts/package_standalone_skill.py
+python3 scripts/package_standalone_skill.py --check
+python3 scripts/test_standalone_skill.py
+```
+
+The builder shares the canonical validator and protected-source rules, adapting
+only local prerequisites and final delivery. Verification catches source drift;
+changes to the canonical workflow that need a new adaptation stop the build.
+
+## Use the MCP-backed plugin
 
 1. Select the [Email Studio plugin](https://chatgpt.com/plugins/plugin_asdk_app_6adcc939af148191967f4b5854d9a4e2) in Codex. Access depends on the plugin’s current availability.
 2. Supply an existing email HTML file and describe the changes you want.
@@ -61,6 +97,7 @@ File editing and validation run locally. The Cloudflare MCP server serves the ed
 ## Repository
 
 - [`d365-email-studio/`](d365-email-studio/) — skill instructions and validator.
+- [`standalone/d365-email-studio-local/`](standalone/d365-email-studio-local/) — self-contained local skill.
 - [`plugin/`](plugin/) — plugin package and icons.
 - [`cloudflare-mcp/`](cloudflare-mcp/) — read-only MCP server and development instructions.
 - [`example/`](example/) — sample email files.
@@ -71,12 +108,12 @@ File editing and validation run locally. The Cloudflare MCP server serves the ed
 
 ## Releases and verification
 
-The local standalone package and Worker are version **0.1.12**. The linked private
+The local plugin package and Worker are version **0.1.12**. The linked private
 App-backed plugin has its separate **1.0.3** history; rebuilding this repository
 neither updates that installation nor deploys the Worker. The older `0.1.11` ZIP
 is retained as a historical release.
 
-Build and verify the standalone package from canonical skill sources:
+Build and verify the MCP-backed plugin package from canonical skill sources:
 
 ```sh
 python3 scripts/package_plugin.py
