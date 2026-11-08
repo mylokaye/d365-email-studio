@@ -15,39 +15,18 @@ It does not create or redesign emails, connect to your Dynamics tenant, send mes
 
 ## Use the standalone skill
 
-The [local skill ZIP](d365-email-studio-local.zip) contains the complete skill,
-Python validator, edit-plan reference and licence. It needs local file access and
-**Python 3.9+**, with no MCP server, connector, Node.js or inline preview app.
-The original preservation rules and exact edit-plan checks apply. The result is a
-complete validated HTML file with a change summary; rendering still needs a Dynamics
-preview and test send. Content given to your AI host is processed under that host's
-account settings; standalone does not mean the AI model runs offline.
+The [standalone SKILL.md](standalone/d365-email-studio-local/SKILL.md) is instruction-only.
+Give it to your AI assistant with the complete email HTML and your requested edits.
+It returns the complete updated HTML in a code block, plus a brief change summary.
+No Python, scripts, packages, MCP, connector, browser or local filesystem is required.
 
-For Codex, extract the ZIP into your skills directory:
+The assistant compares the original and edited source directly. This is model-based
+review rather than automated structural or byte-for-byte validation. Rendering still
+needs a Dynamics preview and test send.
 
-```sh
-mkdir -p ~/.codex/skills
-unzip -n d365-email-studio-local.zip -d ~/.codex/skills
-```
-
-The result should be `~/.codex/skills/d365-email-studio-local/SKILL.md` with its
-`scripts/`, `references/` and `agents/` folders alongside it. Start a new chat and
-invoke `$d365-email-studio-local` with an existing email HTML file and your request.
-The `-n` option preserves any existing installation; choose a fresh destination
-when reviewing a later build before replacing an installed copy.
-
-The repository copy is [standalone/d365-email-studio-local/](standalone/d365-email-studio-local/).
-Rebuild and verify it from canonical sources with:
-
-```sh
-python3 scripts/package_standalone_skill.py
-python3 scripts/package_standalone_skill.py --check
-python3 scripts/test_standalone_skill.py
-```
-
-The builder shares the canonical validator and protected-source rules, adapting
-only local prerequisites and final delivery. Verification catches source drift;
-changes to the canonical workflow that need a new adaptation stop the build.
+For Codex, place this skill folder in your skills directory and invoke
+`$d365-email-studio-local`. In other hosts, supply the instructions directly.
+No ZIP build or installation script is needed.
 
 ## Use the MCP-backed plugin
 
