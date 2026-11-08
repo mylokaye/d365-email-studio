@@ -43,7 +43,7 @@ The standalone assistant compares the edited source with the original and review
 
 ## Use the MCP-backed plugin
 
-1. Select the [Email Studio plugin](https://chatgpt.com/plugins/plugin_asdk_app_6adcc939af148191967f4b5854d9a4e2) in a compatible host. Access depends on the plugin's availability.
+1. Select the Email Studio plugin in a compatible host if it is available to your account. The current plugin is private.
 2. Supply an existing email HTML file and describe the changes you want.
 3. Review the complete output file, diff and local validation result. In supported hosts, the completed file also appears in an isolated inline preview with copy and download controls.
 4. Check the result in Dynamics preview and a test send before use.
@@ -63,7 +63,7 @@ python3 d365-email-studio/scripts/validate_email.py original.html --apply-plan e
 python3 d365-email-studio/scripts/validate_email.py original.html updated.html --plan edits.json
 ```
 
-See the [edit-plan format](d365-email-studio/references/edit-plan.md). The validator binds exact edited occurrences to the original source hash, freezes destinations and image sources during translation, and checks protected source and Outlook counterparts. Inputs must be UTF-8; the original BOM and untouched line endings are preserved.
+The validator binds exact edited occurrences to the original source hash, freezes destinations and image sources during translation, and checks protected source and Outlook counterparts. Inputs must be UTF-8; the original BOM and untouched line endings are preserved.
 
 `--structural-only` is a diagnostic mode and does not complete the plugin's validation workflow. Automated checks do not prove translation quality, correct interpretation of the request, rendering or acceptance in Dynamics.
 
