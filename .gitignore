@@ -32,3 +32,4 @@ dist/
 /stress-tests/report.md
 /stress-tests/translation-diff.json
 /stress-tests/validator-before.py
+sites/email-translator/
