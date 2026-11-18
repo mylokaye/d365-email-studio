@@ -10,6 +10,7 @@ Edit and translate existing **Dynamics 365 Customer Insights – Journeys** emai
 | --- | --- | --- |
 | [Standalone skill](standalone/d365-email-studio-local/SKILL.md) | An AI assistant and the complete source HTML | Complete edited HTML in a code block, with assistant source comparison |
 | [MCP-backed plugin](plugin/) | A compatible host, connector and local Python 3.9+ execution | Complete edited HTML file, automated source checks and an inline preview where supported |
+| [Copilot Excel workflow](copilot/README.md) | Copilot Studio Microsoft Copilot harness, Python and openpyxl | Blank translation workbook, validated HTML per language and an uploadable skill ZIP; Microsoft tenant verification pending |
 
 The standalone skill is instruction-only. It requires no Python, scripts, packages, MCP server, connector, browser or local filesystem access.
 

@@ -33,3 +33,6 @@ dist/
 /stress-tests/translation-diff.json
 /stress-tests/validator-before.py
 sites/email-translator/
+
+# Local Copilot workbook packages, examples and rendered previews
+/outputs/copilot-workbook/

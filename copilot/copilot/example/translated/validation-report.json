@@ -1,0 +1,30 @@
+{
+  "ok": true,
+  "blocks": 6,
+  "languages": 2,
+  "translations_verified": 12,
+  "source_sha256": "2389ba7a88b9ef3d5b12a963b36ce41a9c364c87e5df8f8d3ef2413ef005f817",
+  "checks": [
+    "Workbook identity and source inventory",
+    "Complete translation cells and stable block IDs",
+    "Exact replacement plan",
+    "Protected source and recognised Outlook counterparts"
+  ],
+  "not_verified": [
+    "Translation meaning and language accuracy",
+    "Dynamics acceptance",
+    "Outlook rendering"
+  ],
+  "notices": [],
+  "files": {
+    "email-de-DE.html": {
+      "bytes": 418,
+      "sha256": "ca4621bd62106fc44a3b37d5181f27b3d0654d9f0017ef4ec75aa054dc13a11f"
+    },
+    "email-fr-FR.html": {
+      "bytes": 409,
+      "sha256": "0225b459d802709282ddc0505b96a9ac3ccf25ca5b5f037df1926745b58d586d"
+    }
+  },
+  "bundle": "translated-emails.zip"
+}
